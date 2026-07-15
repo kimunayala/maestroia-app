@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Poppins", "Century Gothic", sans-serif;
+  --font-body: "Inter", -apple-system, sans-serif;
+
+  --color-gold-light: #E8C547;
+  --color-gold: #C4A020;
+  --color-gold-dark: #8A6F16;
+  --color-olive-dark: #3D3410;
+  --color-ink: #0A0A0A;
+  --color-charcoal: #161616;
+  --color-charcoal-light: #212121;
+  --color-paper: #FAFAF8;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-ink);
+  font-family: var(--font-body);
+  color: var(--color-paper);
+}
+
+::selection {
+  background-color: var(--color-gold);
+  color: var(--color-ink);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-ink);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-gold-dark);
+  border-radius: 6px;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, transparent, rgba(196,160,32,0.15), transparent);
+  background-size: 400px 100%;
+  animation: shimmer 1.6s infinite;
+}
