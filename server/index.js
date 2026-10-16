@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3001;
 const APP_PASSCODE = process.env.APP_PASSCODE || "";
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 // Confía en el proxy de Railway para obtener la IP real del cliente (necesario para el rate limit)
 app.set("trust proxy", 1);
 
