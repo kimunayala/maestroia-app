@@ -11,7 +11,7 @@ const MODEL = process.env.CLAUDE_MODEL || "claude-sonnet-5";
  * @param {string} descripcion - Descripción del proyecto (ej: "galpón de 200m2 en acero")
  * @returns {Promise<object>} objeto con { items: [...], notas: string }
  */
-async function generarEstimacion(descripcion) {
+async function generarEstimacion(descripcion, imagenes = []) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error(
@@ -56,7 +56,18 @@ Reglas:
       model: MODEL,
       max_tokens: 8000,
       system: systemPrompt,
-      messages: [{ role: "user", content: descripcion }],
+      messages: [{
+        role: "user",
+        content: imagenes.length > 0
+          ? [
+              ...imagenes.map((b64) => ({
+                type: "image",
+                source: { type: "base64", media_type: "image/jpeg", data: b64 },
+              })),
+              { type: "text", text: descripcion },
+            ]
+          : descripcion,
+      }],
     }),
   });
 

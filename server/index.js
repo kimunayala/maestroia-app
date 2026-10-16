@@ -51,7 +51,7 @@ app.post("/api/auth", (req, res) => {
 app.post("/api/estimar", estimateLimiter, checkPasscode, async (req, res) => {
   const usageLogTime = new Date().toISOString();
   const clientIp = req.ip;
-  const { descripcion } = req.body;
+  const { descripcion, imagenes = [] } = req.body;
 
   if (!descripcion || typeof descripcion !== "string" || descripcion.trim().length < 5) {
     return res.status(400).json({
@@ -60,7 +60,7 @@ app.post("/api/estimar", estimateLimiter, checkPasscode, async (req, res) => {
   }
 
   try {
-    const estimacion = await generarEstimacion(descripcion.trim());
+    const estimacion = await generarEstimacion(descripcion.trim(), Array.isArray(imagenes) ? imagenes.slice(0, 4) : []);
 
     const IVA_RATE = 0.19;
     const itemsConTotales = (estimacion.items || []).map((item) => {

@@ -38,7 +38,7 @@ function App() {
     setUnlocked(true);
   }
 
-  async function handleEstimate(descripcion) {
+  async function handleEstimate(descripcion, imagenes = []) {
     setLoading(true);
     setError(null);
     setResultado(null);
@@ -50,7 +50,7 @@ function App() {
           "Content-Type": "application/json",
           ...(passcode ? { "x-app-passcode": passcode } : {}),
         },
-        body: JSON.stringify({ descripcion }),
+        body: JSON.stringify({ descripcion, imagenes }),
       });
 
       const data = await res.json();

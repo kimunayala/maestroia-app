@@ -2,6 +2,34 @@ import { useRef } from "react";
 import html2canvas from "html2canvas";
 import { formatCLP, formatNumber } from "../utils/format";
 
+function generarMailto(data) {
+  const { proyecto, items, notas_generales, resumen } = data;
+  const grupos = items.reduce((acc, item) => {
+    const cat = item.categoria || "Otros";
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(item);
+    return acc;
+  }, {});
+
+  let cuerpo = `ESTIMACIÓN MAESTROIA\nProyecto: ${proyecto}\n\n`;
+  Object.entries(grupos).forEach(([cat, rows]) => {
+    cuerpo += `── ${cat.toUpperCase()} ──\n`;
+    rows.forEach((i) => {
+      cuerpo += `• ${i.material}: ${i.cantidad} ${i.unidad} × $${i.precio_unitario_clp.toLocaleString("es-CL")} = $${i.subtotal_clp.toLocaleString("es-CL")}\n`;
+    });
+    cuerpo += "\n";
+  });
+  cuerpo += `Subtotal neto: $${resumen.subtotal_clp.toLocaleString("es-CL")}\n`;
+  cuerpo += `IVA (19%): $${resumen.iva_clp.toLocaleString("es-CL")}\n`;
+  cuerpo += `TOTAL ESTIMADO: $${resumen.total_clp.toLocaleString("es-CL")}\n`;
+  if (notas_generales) cuerpo += `\nNotas: ${notas_generales}\n`;
+  cuerpo += `\n---\nGenerado por MaestroIA · Evoluzion Arquitectura y Diseño`;
+
+  const asunto = encodeURIComponent(`Estimación MaestroIA – ${proyecto}`);
+  const body = encodeURIComponent(cuerpo);
+  return `mailto:?subject=${asunto}&body=${body}`;
+}
+
 async function exportarImagen(ref, tipo) {
   if (!ref.current) return;
   const canvas = await html2canvas(ref.current, {
@@ -23,6 +51,7 @@ function exportarPDF() {
 export default function ResultsTable({ data }) {
   const exportRef = useRef(null);
   if (!data) return null;
+  const mailtoLink = generarMailto(data);
 
   const { proyecto, items, notas_generales, resumen } = data;
 
@@ -37,6 +66,12 @@ export default function ResultsTable({ data }) {
     <div className="mt-10 animate-fade-in-up">
       {/* Botones exportar — se ocultan al imprimir */}
       <div className="flex gap-2 mb-4 justify-end no-print">
+        <a
+          href={mailtoLink}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gold/30 bg-gold/10 hover:bg-gold/20 text-gold text-xs font-medium transition-all"
+        >
+          ✉ Enviar por correo
+        </a>
         <button
           onClick={exportarPDF}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-all"
