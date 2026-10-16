@@ -111,8 +111,17 @@ Responde solo el JSON, nada más.`;
   }
 
   const data = await response.json();
+
+  // Log detallado para diagnóstico
+  console.log("[Claude] stop_reason:", data.stop_reason, "| content blocks:", data.content?.length, "| model:", data.model);
+  if (data.error) {
+    console.error("[Claude] API error body:", JSON.stringify(data.error));
+    throw new Error(`Error de la API de Anthropic: ${data.error.message || JSON.stringify(data.error)}`);
+  }
+
   const textBlock = data.content?.find((b) => b.type === "text");
   if (!textBlock) {
+    console.error("[Claude] Respuesta sin texto. Content:", JSON.stringify(data.content));
     throw new Error("La respuesta de Claude no contiene texto.");
   }
 
