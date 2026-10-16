@@ -1,12 +1,5 @@
 import { useState, useRef } from "react";
 
-const EJEMPLOS = [
-  "Domo geodésico de 8m de diámetro para uso turístico, estructura en madera con cubierta translúcida",
-  "Casa modular ampliable de 40m2, estructura en acero galvanizado con paneles SIP",
-  "Galpón industrial de 300m2 en la Región de Los Lagos, estructura metálica",
-  "Estructura flotante para centro de cultivo de mitílidos, 20x20m",
-];
-
 const MAX_FOTOS = 4;
 const MAX_PX = 1024;
 const QUALITY = 0.75;
@@ -116,19 +109,6 @@ export default function EstimatorForm({ onSubmit, loading }) {
           className="hidden"
           onChange={handleFotos}
         />
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        {EJEMPLOS.map((ej, i) => (
-          <button
-            type="button"
-            key={i}
-            onClick={() => setDescripcion(ej)}
-            className="text-xs px-3 py-1.5 rounded-full border border-white/10 text-white/50 hover:border-gold/50 hover:text-gold transition-colors"
-          >
-            {ej.slice(0, 42)}…
-          </button>
-        ))}
       </div>
 
       <button
