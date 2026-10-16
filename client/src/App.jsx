@@ -90,19 +90,6 @@ function App() {
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-14 relative">
         <div className="no-print">
-        <section className="mb-10">
-          <h1
-            className="text-3xl sm:text-4xl text-paper mb-3"
-            style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}
-          >
-            Estimador de materiales <span className="text-gold">con IA</span>
-          </h1>
-          <p className="text-white/50 max-w-2xl leading-relaxed">
-            Describe tu proyecto de construcción — domo geodésico, casa modular,
-            galpón o estructura de acuicultura — y MaestroIA genera una estimación
-            preliminar de materiales con precios en pesos chilenos e IVA incluido.
-          </p>
-        </section>
           <EstimatorForm onSubmit={handleEstimate} loading={loading} />
 
           {loading && <LoadingSkeleton />}
