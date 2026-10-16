@@ -89,6 +89,7 @@ function App() {
       <Header />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-14 relative">
+        <div className="no-print">
         <section className="mb-10">
           <h1
             className="text-3xl sm:text-4xl text-paper mb-3"
@@ -102,16 +103,16 @@ function App() {
             preliminar de materiales con precios en pesos chilenos e IVA incluido.
           </p>
         </section>
+          <EstimatorForm onSubmit={handleEstimate} loading={loading} />
 
-        <EstimatorForm onSubmit={handleEstimate} loading={loading} />
+          {loading && <LoadingSkeleton />}
 
-        {loading && <LoadingSkeleton />}
-
-        {error && (
-          <div className="mt-8 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300 animate-fade-in-up">
-            {error}
-          </div>
-        )}
+          {error && (
+            <div className="mt-8 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300 animate-fade-in-up">
+              {error}
+            </div>
+          )}
+        </div>
 
         {resultado && !loading && <ResultsTable data={resultado} />}
       </main>
