@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const MAX_FOTOS = 4;
 const MAX_PX = 1024;
@@ -44,7 +44,41 @@ export default function EstimatorForm({ onSubmit, loading }) {
   const [fotos, setFotos] = useState([]); // [{preview, base64}]
   const [tipoCotizacion, setTipoCotizacion] = useState("completo");
   const [unidadPrincipal, setUnidadPrincipal] = useState("");
+  const [escuchando, setEscuchando] = useState(false);
+  const [micDisponible, setMicDisponible] = useState(false);
   const inputRef = useRef(null);
+  const reconocimientoRef = useRef(null);
+
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      setMicDisponible(true);
+      const rec = new SpeechRecognition();
+      rec.lang = "es-CL";
+      rec.continuous = true;
+      rec.interimResults = false;
+      rec.onresult = (e) => {
+        const texto = Array.from(e.results)
+          .map((r) => r[0].transcript)
+          .join(" ");
+        setDescripcion((prev) => (prev ? prev + " " + texto : texto));
+      };
+      rec.onend = () => setEscuchando(false);
+      rec.onerror = () => setEscuchando(false);
+      reconocimientoRef.current = rec;
+    }
+  }, []);
+
+  function toggleMic() {
+    if (!reconocimientoRef.current) return;
+    if (escuchando) {
+      reconocimientoRef.current.stop();
+      setEscuchando(false);
+    } else {
+      reconocimientoRef.current.start();
+      setEscuchando(true);
+    }
+  }
 
   async function handleFotos(e) {
     const archivos = Array.from(e.target.files).slice(0, MAX_FOTOS - fotos.length);
@@ -119,9 +153,29 @@ export default function EstimatorForm({ onSubmit, loading }) {
         </div>
       </div>
 
-      <label className="block text-sm text-white/60 mb-2">
-        Describe el proyecto que quieres estimar
-      </label>
+      <div className="flex items-center justify-between mb-2">
+        <label className="block text-sm text-white/60">
+          Describe el proyecto que quieres estimar
+        </label>
+        {micDisponible && (
+          <button
+            type="button"
+            onClick={toggleMic}
+            title={escuchando ? "Detener dictado" : "Dictar por micrófono"}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-medium transition-all ${
+              escuchando
+                ? "border-red-500/60 bg-red-500/15 text-red-400 animate-pulse"
+                : "border-white/20 bg-white/5 text-white/50 hover:border-gold/50 hover:text-gold"
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+              <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z" />
+              <path d="M5.5 9.643a.75.75 0 00-1.5 0V10c0 3.06 2.29 5.585 5.25 5.954V17.5h-1.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5H10.75v-1.546A6.001 6.001 0 0016 10v-.357a.75.75 0 00-1.5 0V10a4.5 4.5 0 01-9 0v-.357z" />
+            </svg>
+            {escuchando ? "Escuchando…" : "Dictar"}
+          </button>
+        )}
+      </div>
       <textarea
         value={descripcion}
         onChange={(e) => setDescripcion(e.target.value)}
