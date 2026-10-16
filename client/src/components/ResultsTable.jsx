@@ -79,12 +79,6 @@ export default function ResultsTable({ data }) {
           ⬇ PDF
         </button>
         <button
-          onClick={() => exportarImagen(exportRef, "png")}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-all"
-        >
-          ⬇ PNG
-        </button>
-        <button
           onClick={() => exportarImagen(exportRef, "jpg")}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-all"
         >

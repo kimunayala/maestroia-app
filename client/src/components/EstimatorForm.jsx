@@ -94,10 +94,10 @@ export default function EstimatorForm({ onSubmit, loading }) {
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="w-16 h-16 rounded-lg border border-dashed border-white/20 hover:border-gold/50 flex flex-col items-center justify-center gap-0.5 text-white/40 hover:text-gold transition-colors"
+              className="px-3 py-2 rounded-lg border border-dashed border-white/20 hover:border-gold/50 flex items-center gap-1.5 text-white/40 hover:text-gold transition-colors text-xs"
             >
-              <span className="text-xl leading-none">📎</span>
-              <span className="text-[9px]">{fotos.length}/{MAX_FOTOS}</span>
+              <span>+ Subir imagen</span>
+              <span className="opacity-60">({fotos.length}/{MAX_FOTOS})</span>
             </button>
           )}
 
