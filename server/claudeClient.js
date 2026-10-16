@@ -35,6 +35,13 @@ Dada una descripción de proyecto, responde ÚNICAMENTE con un objeto JSON váli
       "notas": "string breve o vacío"
     }
   ],
+  "referencias_mo": {
+    "tipo_trabajo": "string: descripción breve del tipo de trabajo detectado, ej. Pintura anticorrosiva rejas metálicas, Techado plancha zinc galvanizado, Albañilería bloques hormigón",
+    "unidad_mo": "string: unidad más apropiada para cobrar la MO según el trabajo, ej. ml, m2, m3, global, un",
+    "precio_mo_mercado_bajo": number,
+    "precio_mo_mercado_alto": number,
+    "nota": "string breve: contexto sobre cómo se cobra este trabajo en Chile (ej. en rejas se cobra por metro lineal, en pintura de muros por m2, etc.)"
+  },
   "notas_generales": "string: supuestos y recomendaciones breves"
 }
 
@@ -43,6 +50,8 @@ Reglas:
 - Incluye entre 6 y 14 ítems relevantes según el tipo de proyecto.
 - Los números deben ser números JSON válidos (sin puntos de miles, sin texto).
 - No incluyas IVA en precio_unitario_clp (el cálculo de IVA se hace aparte).
+- Incluye SIEMPRE el campo "referencias_mo". Analiza el tipo de trabajo para determinar la unidad correcta (metro lineal para rejas y cercos, m2 para pinturas de muros y techos, m3 para excavaciones, global para trabajos difíciles de medir) y entrega rangos de precio de mano de obra de mercado chileno vigente.
+- Para precio_mo_mercado_bajo y precio_mo_mercado_alto: usa precios netos CLP por unidad_mo, sin IVA, realistas para el mercado actual (ej. pintura reja ml: 22000–35000, pintura muro m2: 4000–8000, techado zinc m2: 8000–15000).
 - Responde solo el JSON, nada más.`;
 
   const response = await fetch(ANTHROPIC_API_URL, {

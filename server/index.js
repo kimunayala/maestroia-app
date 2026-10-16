@@ -80,10 +80,17 @@ app.post("/api/estimar", estimateLimiter, checkPasscode, async (req, res) => {
       `[MaestroIA] ${usageLogTime} | IP: ${clientIp} | items: ${itemsConTotales.length} | descripción: "${descripcion.slice(0, 80)}"`
     );
 
+    // Si Claude entregó referencias_mo, enriquecerla con la regla del maestro
+    // (MO estimada ≈ costo total de materiales — heurística común en Chile)
+    const refMO = estimacion.referencias_mo
+      ? { ...estimacion.referencias_mo, regla_maestro_clp: subtotalGeneral }
+      : null;
+
     res.json({
       proyecto: estimacion.proyecto || "Proyecto sin nombre",
       items: itemsConTotales,
       notas_generales: estimacion.notas_generales || "",
+      referencias_mo: refMO,
       resumen: {
         subtotal_clp: subtotalGeneral,
         iva_clp: iva,

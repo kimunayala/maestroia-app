@@ -264,6 +264,11 @@ export default function ResultsTable({ data }) {
           <SummaryRow label="Total estimado" value={formatCLP(resumen.total_clp)} highlight />
         </div>
 
+        {/* ── Referencia Mano de Obra ── */}
+        {data.referencias_mo && (
+          <ReferenciasMO ref_mo={data.referencias_mo} />
+        )}
+
         {notas_generales && (
           <div className="mt-6 rounded-xl border border-white/10 bg-charcoal/60 px-4 py-3 text-xs text-white/50 leading-relaxed">
             <span className="text-gold font-medium">Notas: </span>{notas_generales}
@@ -314,6 +319,67 @@ function SummaryRow({ label, value, highlight = false }) {
     <div className="flex items-center justify-between py-1">
       <span className={highlight ? "text-paper font-semibold" : "text-white/60 text-sm"}>{label}</span>
       <span className={highlight ? "text-gold text-lg font-bold" : "text-white/80 text-sm"}>{value}</span>
+    </div>
+  );
+}
+
+/* ── Referencia de Mano de Obra ── */
+function ReferenciasMO({ ref_mo }) {
+  const {
+    tipo_trabajo,
+    unidad_mo,
+    precio_mo_mercado_bajo,
+    precio_mo_mercado_alto,
+    regla_maestro_clp,
+    nota,
+  } = ref_mo;
+
+  const rangoBajo = typeof precio_mo_mercado_bajo === "number" ? formatCLP(precio_mo_mercado_bajo) : "–";
+  const rangoAlto = typeof precio_mo_mercado_alto === "number" ? formatCLP(precio_mo_mercado_alto) : "–";
+  const reglaMaestro = typeof regla_maestro_clp === "number" ? formatCLP(regla_maestro_clp) : null;
+
+  return (
+    <div className="mt-6 rounded-2xl border border-gold/25 bg-gold/[0.04] p-5">
+      {/* Encabezado */}
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-gold text-base leading-none">⚒</span>
+        <span className="text-gold font-semibold text-xs uppercase tracking-widest">Referencia Mano de Obra</span>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Columna izquierda: tipo de trabajo + rango mercado */}
+        <div className="space-y-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-white/35 mb-0.5">Tipo de trabajo detectado</p>
+            <p className="text-white/80 text-sm font-medium">{tipo_trabajo}</p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-white/35 mb-0.5">Precio MO mercado (neto, sin IVA)</p>
+            <p className="text-paper text-sm font-semibold">
+              {rangoBajo} – {rangoAlto}
+              <span className="text-white/40 font-normal ml-1">/ {unidad_mo}</span>
+            </p>
+            {nota && <p className="text-white/40 text-[11px] mt-1 leading-relaxed">{nota}</p>}
+          </div>
+        </div>
+
+        {/* Columna derecha: regla del maestro */}
+        <div className="rounded-xl border border-gold/20 bg-charcoal/60 px-4 py-3">
+          <p className="text-[10px] uppercase tracking-widest text-white/35 mb-1">Regla del maestro</p>
+          <p className="text-white/60 text-xs leading-relaxed mb-2">
+            En trabajos de construcción, la mano de obra suele equivaler al costo total de materiales.
+          </p>
+          {reglaMaestro && (
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-white/40 text-xs">MO estimada ≈</span>
+              <span className="text-gold font-bold text-base">{reglaMaestro}</span>
+            </div>
+          )}
+          <p className="text-white/25 text-[10px] mt-1.5 leading-relaxed">
+            Referencial. Verificar con maestro según envergadura y dificultad del trabajo.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
