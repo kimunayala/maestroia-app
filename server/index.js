@@ -51,7 +51,7 @@ app.post("/api/auth", (req, res) => {
 app.post("/api/estimar", estimateLimiter, checkPasscode, async (req, res) => {
   const usageLogTime = new Date().toISOString();
   const clientIp = req.ip;
-  const { descripcion, imagenes = [] } = req.body;
+  const { descripcion, imagenes = [], tipoCotizacion = "completo", unidadPrincipal = "" } = req.body;
 
   if (!descripcion || typeof descripcion !== "string" || descripcion.trim().length < 5) {
     return res.status(400).json({
@@ -60,38 +60,55 @@ app.post("/api/estimar", estimateLimiter, checkPasscode, async (req, res) => {
   }
 
   try {
-    const estimacion = await generarEstimacion(descripcion.trim(), Array.isArray(imagenes) ? imagenes.slice(0, 4) : []);
+    const estimacion = await generarEstimacion(
+      descripcion.trim(),
+      Array.isArray(imagenes) ? imagenes.slice(0, 4) : [],
+      tipoCotizacion,
+      unidadPrincipal
+    );
 
     const IVA_RATE = 0.19;
-    const itemsConTotales = (estimacion.items || []).map((item) => {
-      const cantidad = Number(item.cantidad) || 0;
-      const precioUnitario = Number(item.precio_unitario_clp) || 0;
-      const subtotal = Math.round(cantidad * precioUnitario);
-      return { ...item, cantidad, precio_unitario_clp: precioUnitario, subtotal_clp: subtotal };
-    });
 
-    const subtotalGeneral = itemsConTotales.reduce((acc, i) => acc + i.subtotal_clp, 0);
+    function calcularItems(arr) {
+      return (arr || []).map((item) => {
+        const cantidad = Number(item.cantidad) || 0;
+        const precioUnitario = Number(item.precio_unitario_clp) || 0;
+        const subtotal = Math.round(cantidad * precioUnitario);
+        return { ...item, cantidad, precio_unitario_clp: precioUnitario, subtotal_clp: subtotal };
+      });
+    }
+
+    const itemsMateriales = calcularItems(estimacion.items_materiales);
+    const itemsMO = calcularItems(estimacion.items_mo);
+
+    const subtotalMateriales = itemsMateriales.reduce((acc, i) => acc + i.subtotal_clp, 0);
+    const subtotalMO = itemsMO.reduce((acc, i) => acc + i.subtotal_clp, 0);
+    const subtotalGeneral = subtotalMateriales + subtotalMO;
     const iva = Math.round(subtotalGeneral * IVA_RATE);
     const total = subtotalGeneral + iva;
 
     // Log de uso básico — visible en los logs de Railway para monitoreo manual.
     // El consumo real de tokens/costo se revisa en console.anthropic.com
     console.log(
-      `[MaestroIA] ${usageLogTime} | IP: ${clientIp} | items: ${itemsConTotales.length} | descripción: "${descripcion.slice(0, 80)}"`
+      `[MaestroIA] ${usageLogTime} | IP: ${clientIp} | tipo: ${tipoCotizacion} | mat: ${itemsMateriales.length} mo: ${itemsMO.length} | descripción: "${descripcion.slice(0, 80)}"`
     );
 
     // Si Claude entregó referencias_mo, enriquecerla con la regla del maestro
     // (MO estimada ≈ costo total de materiales — heurística común en Chile)
     const refMO = estimacion.referencias_mo
-      ? { ...estimacion.referencias_mo, regla_maestro_clp: subtotalGeneral }
+      ? { ...estimacion.referencias_mo, regla_maestro_clp: subtotalMateriales || subtotalGeneral }
       : null;
 
     res.json({
       proyecto: estimacion.proyecto || "Proyecto sin nombre",
-      items: itemsConTotales,
+      tipo_cotizacion: tipoCotizacion,
+      items_materiales: itemsMateriales,
+      items_mo: itemsMO,
       notas_generales: estimacion.notas_generales || "",
       referencias_mo: refMO,
       resumen: {
+        subtotal_materiales_clp: subtotalMateriales,
+        subtotal_mo_clp: subtotalMO,
         subtotal_clp: subtotalGeneral,
         iva_clp: iva,
         iva_rate: IVA_RATE,

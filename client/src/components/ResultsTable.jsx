@@ -125,23 +125,41 @@ function Field({ label, value, onChange, placeholder }) {
 
 /* ── Mailto con datos de empresa ── */
 function generarMailto(data, datos) {
-  const { proyecto, items, notas_generales, resumen } = data;
-  const grupos = items.reduce((acc, item) => {
-    const cat = item.categoria || "Otros";
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(item);
-    return acc;
-  }, {});
-
+  const { proyecto, items_materiales = [], items_mo = [], notas_generales, resumen } = data;
   const emisor = datos.empresa || "MaestroIA";
   let cuerpo = `COTIZACIÓN PRELIMINAR – ${emisor}\nProyecto: ${proyecto}\n\n`;
-  Object.entries(grupos).forEach(([cat, rows]) => {
-    cuerpo += `── ${cat.toUpperCase()} ──\n`;
-    rows.forEach(i => {
-      cuerpo += `• ${i.material}: ${i.cantidad} ${i.unidad} × $${i.precio_unitario_clp.toLocaleString("es-CL")} = $${i.subtotal_clp.toLocaleString("es-CL")}\n`;
+
+  if (items_materiales.length > 0) {
+    const grupos = items_materiales.reduce((acc, item) => {
+      const cat = item.categoria || "Materiales";
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(item);
+      return acc;
+    }, {});
+    cuerpo += `══ CUBICACIÓN DE MATERIALES ══\n`;
+    Object.entries(grupos).forEach(([cat, rows]) => {
+      cuerpo += `── ${cat.toUpperCase()} ──\n`;
+      rows.forEach(i => {
+        cuerpo += `• ${i.material}: ${i.cantidad} ${i.unidad} × $${i.precio_unitario_clp.toLocaleString("es-CL")} = $${i.subtotal_clp.toLocaleString("es-CL")}\n`;
+      });
     });
+    if (resumen.subtotal_materiales_clp) {
+      cuerpo += `Subtotal materiales: $${resumen.subtotal_materiales_clp.toLocaleString("es-CL")}\n`;
+    }
     cuerpo += "\n";
-  });
+  }
+
+  if (items_mo.length > 0) {
+    cuerpo += `══ MANO DE OBRA ══\n`;
+    items_mo.forEach(i => {
+      cuerpo += `• ${i.partida}: ${i.cantidad} ${i.unidad} × $${i.precio_unitario_clp.toLocaleString("es-CL")} = $${i.subtotal_clp.toLocaleString("es-CL")}\n`;
+    });
+    if (resumen.subtotal_mo_clp) {
+      cuerpo += `Subtotal mano de obra: $${resumen.subtotal_mo_clp.toLocaleString("es-CL")}\n`;
+    }
+    cuerpo += "\n";
+  }
+
   cuerpo += `Subtotal neto: $${resumen.subtotal_clp.toLocaleString("es-CL")}\n`;
   cuerpo += `IVA (19%): $${resumen.iva_clp.toLocaleString("es-CL")}\n`;
   cuerpo += `TOTAL ESTIMADO: $${resumen.total_clp.toLocaleString("es-CL")}\n`;
@@ -172,15 +190,19 @@ export default function ResultsTable({ data }) {
   if (!data) return null;
 
   const mailtoLink = generarMailto(data, datos);
-  const { proyecto, items, notas_generales, resumen } = data;
+  const { proyecto, items_materiales = [], items_mo = [], notas_generales, resumen } = data;
   const fecha = new Date().toLocaleDateString("es-CL", { day: "2-digit", month: "long", year: "numeric" });
 
-  const grupos = items.reduce((acc, item) => {
-    const cat = item.categoria || "Otros";
+  const gruposMateriales = items_materiales.reduce((acc, item) => {
+    const cat = item.categoria || "Materiales";
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(item);
     return acc;
   }, {});
+
+  const hayMateriales = items_materiales.length > 0;
+  const hayMO = items_mo.length > 0;
+  const hayAmbos = hayMateriales && hayMO;
 
   return (
     <div className="mt-10 animate-fade-in-up">
@@ -237,27 +259,87 @@ export default function ResultsTable({ data }) {
         </div>
         <div className="h-px w-full bg-gradient-to-r from-gold/60 via-gold/10 to-transparent mb-6" />
 
-        {/* Tabla */}
-        <div className="rounded-2xl border border-white/10 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-charcoal-light text-white/50 text-left uppercase text-[11px] tracking-wider">
-                <th className="px-4 py-3 font-medium">Material / Partida</th>
-                <th className="px-4 py-3 font-medium text-right">Cantidad</th>
-                <th className="px-4 py-3 font-medium text-right">P. Unitario</th>
-                <th className="px-4 py-3 font-medium text-right">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(grupos).map(([categoria, rows]) => (
-                <RenderGrupo key={categoria} categoria={categoria} rows={rows} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* ── Sección Cubicación de Materiales ── */}
+        {hayMateriales && (
+          <div className={hayAmbos ? "mb-8" : ""}>
+            {hayAmbos && (
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-xs font-semibold uppercase tracking-widest text-white/50">Cubicación de Materiales</span>
+                <div className="flex-1 h-px bg-white/10" />
+                {resumen.subtotal_materiales_clp > 0 && (
+                  <span className="text-xs text-white/50">{formatCLP(resumen.subtotal_materiales_clp)}</span>
+                )}
+              </div>
+            )}
+            <div className="rounded-2xl border border-white/10 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-charcoal-light text-white/50 text-left uppercase text-[11px] tracking-wider">
+                    <th className="px-4 py-3 font-medium">Material</th>
+                    <th className="px-4 py-3 font-medium text-right">Cantidad</th>
+                    <th className="px-4 py-3 font-medium text-right">P. Unitario</th>
+                    <th className="px-4 py-3 font-medium text-right">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(gruposMateriales).map(([categoria, rows]) => (
+                    <RenderGrupoMateriales key={categoria} categoria={categoria} rows={rows} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── Sección Mano de Obra ── */}
+        {hayMO && (
+          <div>
+            {hayAmbos && (
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-xs font-semibold uppercase tracking-widest text-white/50">Mano de Obra</span>
+                <div className="flex-1 h-px bg-white/10" />
+                {resumen.subtotal_mo_clp > 0 && (
+                  <span className="text-xs text-white/50">{formatCLP(resumen.subtotal_mo_clp)}</span>
+                )}
+              </div>
+            )}
+            <div className="rounded-2xl border border-white/10 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-charcoal-light text-white/50 text-left uppercase text-[11px] tracking-wider">
+                    <th className="px-4 py-3 font-medium">Mano de obra</th>
+                    <th className="px-4 py-3 font-medium text-right">Cantidad</th>
+                    <th className="px-4 py-3 font-medium text-right">P. Unitario</th>
+                    <th className="px-4 py-3 font-medium text-right">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items_mo.map((item, i) => (
+                    <tr key={i} className="border-t border-white/5 hover:bg-white/[0.02] transition-colors">
+                      <td className="px-4 py-3 text-white/80">
+                        {item.partida}
+                        {item.notas && <span className="block text-[11px] text-white/35 mt-0.5">{item.notas}</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right text-white/70 whitespace-nowrap">{formatNumber(item.cantidad)} {item.unidad}</td>
+                      <td className="px-4 py-3 text-right text-white/70 whitespace-nowrap">{formatCLP(item.precio_unitario_clp)}</td>
+                      <td className="px-4 py-3 text-right text-paper font-medium whitespace-nowrap">{formatCLP(item.subtotal_clp)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Resumen */}
         <div className="mt-6 ml-auto w-full sm:w-80 rounded-2xl border border-gold/20 bg-charcoal p-5">
+          {hayAmbos && resumen.subtotal_materiales_clp > 0 && (
+            <SummaryRow label="Subtotal materiales" value={formatCLP(resumen.subtotal_materiales_clp)} />
+          )}
+          {hayAmbos && resumen.subtotal_mo_clp > 0 && (
+            <SummaryRow label="Subtotal mano de obra" value={formatCLP(resumen.subtotal_mo_clp)} />
+          )}
+          {hayAmbos && <div className="h-px bg-white/10 my-2" />}
           <SummaryRow label="Subtotal neto" value={formatCLP(resumen.subtotal_clp)} />
           <SummaryRow label={`IVA (${Math.round(resumen.iva_rate * 100)}%)`} value={formatCLP(resumen.iva_clp)} />
           <div className="h-px bg-white/10 my-3" />
@@ -293,7 +375,7 @@ export default function ResultsTable({ data }) {
   );
 }
 
-function RenderGrupo({ categoria, rows }) {
+function RenderGrupoMateriales({ categoria, rows }) {
   return (
     <>
       <tr className="bg-ink/40">

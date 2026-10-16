@@ -24,9 +24,26 @@ async function comprimirImagen(file) {
   });
 }
 
+const TIPOS_COTIZACION = [
+  { value: "solo_materiales", label: "Solo materiales" },
+  { value: "solo_mo",         label: "Solo MO" },
+  { value: "materiales_mo",   label: "Materiales + MO" },
+  { value: "completo",        label: "Todo incluido" },
+];
+
+const UNIDADES = [
+  { value: "",         label: "Auto-detectar unidad" },
+  { value: "m2",       label: "m² (metros cuadrados)" },
+  { value: "ml",       label: "Metro lineal" },
+  { value: "m3",       label: "m³ (metros cúbicos)" },
+  { value: "global",   label: "Por trabajo completo" },
+];
+
 export default function EstimatorForm({ onSubmit, loading }) {
   const [descripcion, setDescripcion] = useState("");
   const [fotos, setFotos] = useState([]); // [{preview, base64}]
+  const [tipoCotizacion, setTipoCotizacion] = useState("completo");
+  const [unidadPrincipal, setUnidadPrincipal] = useState("");
   const inputRef = useRef(null);
 
   async function handleFotos(e) {
@@ -51,11 +68,57 @@ export default function EstimatorForm({ onSubmit, loading }) {
   function handleSubmit(e) {
     e.preventDefault();
     if (descripcion.trim().length < 5) return;
-    onSubmit(descripcion.trim(), fotos.map((f) => f.base64));
+    onSubmit(descripcion.trim(), fotos.map((f) => f.base64), tipoCotizacion, unidadPrincipal);
   }
 
   return (
     <form onSubmit={handleSubmit} className="animate-fade-in-up">
+
+      {/* Tipo de cotización */}
+      <div className="mb-4">
+        <label className="block text-xs text-white/40 mb-2 uppercase tracking-widest">
+          Tipo de cotización
+          <span className="ml-2 text-white/25 normal-case tracking-normal">MO = Mano de obra</span>
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {TIPOS_COTIZACION.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setTipoCotizacion(value)}
+              className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                tipoCotizacion === value
+                  ? "border-gold/60 bg-gold/15 text-gold"
+                  : "border-white/15 bg-white/5 text-white/50 hover:border-white/30 hover:text-white/80"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Unidad principal */}
+      <div className="mb-4">
+        <label className="block text-xs text-white/40 mb-2 uppercase tracking-widest">Unidad de medida</label>
+        <div className="flex flex-wrap gap-2">
+          {UNIDADES.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setUnidadPrincipal(value)}
+              className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                unidadPrincipal === value
+                  ? "border-gold/60 bg-gold/15 text-gold"
+                  : "border-white/15 bg-white/5 text-white/50 hover:border-white/30 hover:text-white/80"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <label className="block text-sm text-white/60 mb-2">
         Describe el proyecto que quieres estimar
       </label>
