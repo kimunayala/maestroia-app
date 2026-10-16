@@ -88,7 +88,7 @@ Responde solo el JSON, nada más.`;
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 8000,
+      max_tokens: 20000,
       system: systemPrompt,
       messages: [{
         role: "user",
