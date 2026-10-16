@@ -1,8 +1,130 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import html2canvas from "html2canvas";
 import { formatCLP, formatNumber } from "../utils/format";
 
-function generarMailto(data) {
+/* ── Persistencia de datos empresa/cliente en localStorage ── */
+function useDatosDoc() {
+  const [datos, setDatos] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("maestroia_datos_doc") || "{}"); }
+    catch { return {}; }
+  });
+  function guardar(nuevos) {
+    const merged = { ...datos, ...nuevos };
+    setDatos(merged);
+    try { localStorage.setItem("maestroia_datos_doc", JSON.stringify(merged)); } catch {}
+  }
+  return [datos, guardar];
+}
+
+/* ── Panel colapsable de datos empresa + cliente ── */
+function PanelDatos({ datos, onGuardar }) {
+  const [abierto, setAbierto] = useState(false);
+  const [form, setForm] = useState(datos);
+  const logoRef = useRef(null);
+
+  useEffect(() => { setForm(datos); }, [datos]);
+
+  function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
+
+  function handleLogo(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => set("logo", ev.target.result);
+    reader.readAsDataURL(file);
+  }
+
+  function handleGuardar() {
+    onGuardar(form);
+    setAbierto(false);
+  }
+
+  const tieneEmitente = datos.empresa || datos.ciudad || datos.email;
+  const tieneCliente  = datos.cliente_nombre;
+
+  return (
+    <div className="mb-3">
+      <button
+        onClick={() => setAbierto(o => !o)}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white/80 text-xs font-medium transition-all"
+      >
+        ✏ {tieneEmitente ? "Editar datos cotización" : "Agregar datos empresa / cliente"}
+        {(tieneEmitente || tieneCliente) && (
+          <span className="ml-1 w-1.5 h-1.5 rounded-full bg-gold inline-block" />
+        )}
+      </button>
+
+      {abierto && (
+        <div className="mt-3 rounded-xl border border-white/10 bg-charcoal p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+
+          {/* Columna empresa */}
+          <div className="space-y-2">
+            <p className="text-gold font-semibold uppercase tracking-wider text-[10px] mb-1">Tu empresa</p>
+
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              {form.logo
+                ? <img src={form.logo} alt="logo" className="h-10 object-contain rounded border border-white/10 bg-white/5 px-2" />
+                : <div className="h-10 w-20 rounded border border-dashed border-white/20 flex items-center justify-center text-white/30 text-[10px]">logo</div>
+              }
+              <button
+                type="button"
+                onClick={() => logoRef.current?.click()}
+                className="px-2 py-1 rounded border border-white/15 text-white/50 hover:text-white/80 transition-colors"
+              >
+                {form.logo ? "Cambiar" : "Subir logo"}
+              </button>
+              {form.logo && (
+                <button type="button" onClick={() => set("logo", "")} className="text-white/30 hover:text-red-400 transition-colors">✕</button>
+              )}
+              <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogo} />
+            </div>
+
+            <Field label="Nombre empresa" value={form.empresa || ""} onChange={v => set("empresa", v)} placeholder="Ej: Constructora Los Lagos" />
+            <Field label="Ciudad" value={form.ciudad || ""} onChange={v => set("ciudad", v)} placeholder="Ej: Santiago" />
+            <Field label="Teléfono" value={form.telefono || ""} onChange={v => set("telefono", v)} placeholder="+56 9 1234 5678" />
+            <Field label="Correo" value={form.email || ""} onChange={v => set("email", v)} placeholder="contacto@empresa.cl" />
+          </div>
+
+          {/* Columna cliente */}
+          <div className="space-y-2">
+            <p className="text-gold font-semibold uppercase tracking-wider text-[10px] mb-1">Cliente</p>
+            <Field label="Nombre cliente" value={form.cliente_nombre || ""} onChange={v => set("cliente_nombre", v)} placeholder="Ej: Don Roberto" />
+            <Field label="Empresa cliente" value={form.cliente_empresa || ""} onChange={v => set("cliente_empresa", v)} placeholder="Opcional" />
+            <Field label="Correo cliente" value={form.cliente_email || ""} onChange={v => set("cliente_email", v)} placeholder="cliente@correo.cl" />
+          </div>
+
+          <div className="sm:col-span-2 flex justify-end gap-2 pt-1">
+            <button onClick={() => setAbierto(false)} className="px-3 py-1.5 rounded-lg border border-white/10 text-white/40 hover:text-white/70 transition-colors">
+              Cancelar
+            </button>
+            <button onClick={handleGuardar} className="px-4 py-1.5 rounded-lg bg-gold/20 border border-gold/40 text-gold font-semibold hover:bg-gold/30 transition-colors">
+              Guardar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, placeholder }) {
+  return (
+    <div>
+      <label className="block text-white/40 mb-0.5">{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-lg bg-charcoal-light border border-white/10 px-2.5 py-1.5 text-white/80 placeholder:text-white/20 outline-none focus:border-gold/40 transition-colors text-xs"
+      />
+    </div>
+  );
+}
+
+/* ── Mailto con datos de empresa ── */
+function generarMailto(data, datos) {
   const { proyecto, items, notas_generales, resumen } = data;
   const grupos = items.reduce((acc, item) => {
     const cat = item.categoria || "Otros";
@@ -11,10 +133,11 @@ function generarMailto(data) {
     return acc;
   }, {});
 
-  let cuerpo = `ESTIMACIÓN MAESTROIA\nProyecto: ${proyecto}\n\n`;
+  const emisor = datos.empresa || "MaestroIA";
+  let cuerpo = `COTIZACIÓN PRELIMINAR – ${emisor}\nProyecto: ${proyecto}\n\n`;
   Object.entries(grupos).forEach(([cat, rows]) => {
     cuerpo += `── ${cat.toUpperCase()} ──\n`;
-    rows.forEach((i) => {
+    rows.forEach(i => {
       cuerpo += `• ${i.material}: ${i.cantidad} ${i.unidad} × $${i.precio_unitario_clp.toLocaleString("es-CL")} = $${i.subtotal_clp.toLocaleString("es-CL")}\n`;
     });
     cuerpo += "\n";
@@ -23,20 +146,18 @@ function generarMailto(data) {
   cuerpo += `IVA (19%): $${resumen.iva_clp.toLocaleString("es-CL")}\n`;
   cuerpo += `TOTAL ESTIMADO: $${resumen.total_clp.toLocaleString("es-CL")}\n`;
   if (notas_generales) cuerpo += `\nNotas: ${notas_generales}\n`;
-  cuerpo += `\n---\nGenerado por MaestroIA · Evoluzion Arquitectura y Diseño`;
+  cuerpo += `\n---\nGenerado con MaestroIA · Un producto AIKON`;
 
-  const asunto = encodeURIComponent(`Estimación MaestroIA – ${proyecto}`);
-  const body = encodeURIComponent(cuerpo);
-  return `mailto:?subject=${asunto}&body=${body}`;
+  const dest = datos.cliente_email || "";
+  const asunto = encodeURIComponent(`Cotización – ${proyecto}`);
+  const body   = encodeURIComponent(cuerpo);
+  return `mailto:${dest}?subject=${asunto}&body=${body}`;
 }
 
+/* ── Exportar JPG ── */
 async function exportarImagen(ref, tipo) {
   if (!ref.current) return;
-  const canvas = await html2canvas(ref.current, {
-    backgroundColor: "#0f0f10",
-    scale: 2,
-    useCORS: true,
-  });
+  const canvas = await html2canvas(ref.current, { backgroundColor: "#0f0f10", scale: 2, useCORS: true });
   const url = canvas.toDataURL(tipo === "jpg" ? "image/jpeg" : "image/png", 0.95);
   const a = document.createElement("a");
   a.href = url;
@@ -44,16 +165,15 @@ async function exportarImagen(ref, tipo) {
   a.click();
 }
 
-function exportarPDF() {
-  window.print();
-}
-
+/* ── Componente principal ── */
 export default function ResultsTable({ data }) {
   const exportRef = useRef(null);
+  const [datos, guardarDatos] = useDatosDoc();
   if (!data) return null;
-  const mailtoLink = generarMailto(data);
 
+  const mailtoLink = generarMailto(data, datos);
   const { proyecto, items, notas_generales, resumen } = data;
+  const fecha = new Date().toLocaleDateString("es-CL", { day: "2-digit", month: "long", year: "numeric" });
 
   const grupos = items.reduce((acc, item) => {
     const cat = item.categoria || "Otros";
@@ -64,109 +184,106 @@ export default function ResultsTable({ data }) {
 
   return (
     <div className="mt-10 animate-fade-in-up">
-      {/* Botones exportar — se ocultan al imprimir */}
-      <div className="flex gap-2 mb-4 justify-end no-print">
-        <a
-          href={mailtoLink}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gold/30 bg-gold/10 hover:bg-gold/20 text-gold text-xs font-medium transition-all"
-        >
-          ✉ Enviar por correo
-        </a>
-        <button
-          onClick={exportarPDF}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-all"
-        >
-          ⬇ PDF
-        </button>
-        <button
-          onClick={() => exportarImagen(exportRef, "jpg")}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-all"
-        >
-          ⬇ JPG
-        </button>
+
+      {/* Barra de acciones — oculta al imprimir */}
+      <div className="no-print">
+        <PanelDatos datos={datos} onGuardar={guardarDatos} />
+        <div className="flex gap-2 mb-4 justify-end">
+          <a href={mailtoLink} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gold/30 bg-gold/10 hover:bg-gold/20 text-gold text-xs font-medium transition-all">
+            ✉ Enviar por correo
+          </a>
+          <button onClick={() => window.print()} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-all">
+            ⬇ PDF
+          </button>
+          <button onClick={() => exportarImagen(exportRef, "jpg")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-all">
+            ⬇ JPG
+          </button>
+        </div>
       </div>
 
       <div ref={exportRef} className="export-container p-2">
 
-      {/* Encabezado formal — solo visible al imprimir */}
-      <div className="print-header print-only">
-        <div className="print-header-brand">
-          <div className="brand-name">Evoluzion</div>
-          <div className="brand-tagline">Arquitectura &amp; Diseño · Santiago</div>
+        {/* ── Encabezado formal para PDF ── */}
+        <div className="print-header print-only">
+          <div className="print-header-brand">
+            {datos.logo
+              ? <img src={datos.logo} alt="logo" style={{ height: "48px", objectFit: "contain", marginBottom: "4pt" }} />
+              : <div className="brand-name">{datos.empresa || "MaestroIA"}</div>
+            }
+            {datos.logo && datos.empresa && <div className="brand-name" style={{ fontSize: "13pt" }}>{datos.empresa}</div>}
+            <div className="brand-tagline">
+              {[datos.ciudad, datos.telefono, datos.email].filter(Boolean).join(" · ") || "Generado con MaestroIA · AIKON"}
+            </div>
+          </div>
+          <div className="print-header-meta">
+            <div className="doc-title">Cotización Preliminar</div>
+            <div>{fecha}</div>
+            {datos.cliente_nombre && (
+              <div style={{ marginTop: "6pt" }}>
+                <strong>Cliente:</strong> {datos.cliente_nombre}
+                {datos.cliente_empresa && <div>{datos.cliente_empresa}</div>}
+              </div>
+            )}
+            <div style={{ marginTop: "6pt", fontSize: "7pt", color: "#aaa" }}>Generado con MaestroIA · AIKON</div>
+          </div>
         </div>
-        <div className="print-header-meta">
-          <div className="doc-title">Cotización Preliminar</div>
-          <div>{new Date().toLocaleDateString("es-CL", { day: "2-digit", month: "long", year: "numeric" })}</div>
-          <div>Generado por MaestroIA</div>
+
+        {/* Título proyecto */}
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-xl text-paper" style={{ fontFamily: "var(--font-display)", fontWeight: 600 }}>
+            {proyecto}
+          </h2>
+          <span className="text-[11px] uppercase tracking-widest text-white/40">Estimación preliminar</span>
         </div>
-      </div>
+        <div className="h-px w-full bg-gradient-to-r from-gold/60 via-gold/10 to-transparent mb-6" />
 
-      <div className="flex items-center justify-between mb-1">
-        <h2
-          className="text-xl text-paper"
-          style={{ fontFamily: "var(--font-display)", fontWeight: 600 }}
-        >
-          {proyecto}
-        </h2>
-        <span className="text-[11px] uppercase tracking-widest text-white/40">
-          Estimación preliminar
-        </span>
-      </div>
-      <div className="h-px w-full bg-gradient-to-r from-gold/60 via-gold/10 to-transparent mb-6" />
-
-      <div className="rounded-2xl border border-white/10 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-charcoal-light text-white/50 text-left uppercase text-[11px] tracking-wider">
-              <th className="px-4 py-3 font-medium">Material / Partida</th>
-              <th className="px-4 py-3 font-medium text-right">Cantidad</th>
-              <th className="px-4 py-3 font-medium text-right">P. Unitario</th>
-              <th className="px-4 py-3 font-medium text-right">Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(grupos).map(([categoria, rows]) => (
-              <RenderGrupo key={categoria} categoria={categoria} rows={rows} />
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Resumen */}
-      <div className="mt-6 ml-auto w-full sm:w-80 rounded-2xl border border-gold/20 bg-charcoal p-5">
-        <SummaryRow label="Subtotal neto" value={formatCLP(resumen.subtotal_clp)} />
-        <SummaryRow
-          label={`IVA (${Math.round(resumen.iva_rate * 100)}%)`}
-          value={formatCLP(resumen.iva_clp)}
-        />
-        <div className="h-px bg-white/10 my-3" />
-        <SummaryRow
-          label="Total estimado"
-          value={formatCLP(resumen.total_clp)}
-          highlight
-        />
-      </div>
-
-      {notas_generales && (
-        <div className="mt-6 rounded-xl border border-white/10 bg-charcoal/60 px-4 py-3 text-xs text-white/50 leading-relaxed">
-          <span className="text-gold font-medium">Notas: </span>
-          {notas_generales}
+        {/* Tabla */}
+        <div className="rounded-2xl border border-white/10 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-charcoal-light text-white/50 text-left uppercase text-[11px] tracking-wider">
+                <th className="px-4 py-3 font-medium">Material / Partida</th>
+                <th className="px-4 py-3 font-medium text-right">Cantidad</th>
+                <th className="px-4 py-3 font-medium text-right">P. Unitario</th>
+                <th className="px-4 py-3 font-medium text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(grupos).map(([categoria, rows]) => (
+                <RenderGrupo key={categoria} categoria={categoria} rows={rows} />
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
 
-      <p className="mt-4 text-[11px] text-white/30 leading-relaxed no-print">
-        Esta estimación es referencial, generada con IA a partir de precios de mercado
-        aproximados. No reemplaza una cotización formal ni un presupuesto detallado por
-        Evoluzion Arquitectura y Diseño.
-      </p>
+        {/* Resumen */}
+        <div className="mt-6 ml-auto w-full sm:w-80 rounded-2xl border border-gold/20 bg-charcoal p-5">
+          <SummaryRow label="Subtotal neto" value={formatCLP(resumen.subtotal_clp)} />
+          <SummaryRow label={`IVA (${Math.round(resumen.iva_rate * 100)}%)`} value={formatCLP(resumen.iva_clp)} />
+          <div className="h-px bg-white/10 my-3" />
+          <SummaryRow label="Total estimado" value={formatCLP(resumen.total_clp)} highlight />
+        </div>
 
-      {/* Footer formal — solo visible al imprimir */}
-      <div className="print-footer print-only">
-        Estimación preliminar generada con MaestroIA · Los valores son referenciales y no constituyen una cotización formal comprometida ·
-        Válida por 15 días · Evoluzion Arquitectura &amp; Diseño · Santiago, Chile
+        {notas_generales && (
+          <div className="mt-6 rounded-xl border border-white/10 bg-charcoal/60 px-4 py-3 text-xs text-white/50 leading-relaxed">
+            <span className="text-gold font-medium">Notas: </span>{notas_generales}
+          </div>
+        )}
+
+        <p className="mt-4 text-[11px] text-white/30 leading-relaxed no-print">
+          Esta estimación es referencial, generada con IA a partir de precios de mercado aproximados.
+          No reemplaza una cotización formal ni un presupuesto detallado.
+        </p>
+
+        {/* Footer del documento — solo al imprimir */}
+        <div className="print-footer print-only">
+          Estimación preliminar · Valores referenciales, no constituyen cotización formal comprometida · Válida por 15 días
+          {datos.empresa && ` · ${datos.empresa}`}
+          {datos.ciudad && `, ${datos.ciudad}`}
+          {" · "}Generado con MaestroIA · AIKON
+        </div>
+
       </div>
-
-      </div>{/* fin export-container */}
     </div>
   );
 }
@@ -175,27 +292,17 @@ function RenderGrupo({ categoria, rows }) {
   return (
     <>
       <tr className="bg-ink/40">
-        <td colSpan={4} className="px-4 py-2 text-gold text-xs font-semibold tracking-wide uppercase">
-          {categoria}
-        </td>
+        <td colSpan={4} className="px-4 py-2 text-gold text-xs font-semibold tracking-wide uppercase">{categoria}</td>
       </tr>
       {rows.map((item, i) => (
         <tr key={i} className="border-t border-white/5 hover:bg-white/[0.02] transition-colors">
           <td className="px-4 py-3 text-white/80">
             {item.material}
-            {item.notas && (
-              <span className="block text-[11px] text-white/35 mt-0.5">{item.notas}</span>
-            )}
+            {item.notas && <span className="block text-[11px] text-white/35 mt-0.5">{item.notas}</span>}
           </td>
-          <td className="px-4 py-3 text-right text-white/70 whitespace-nowrap">
-            {formatNumber(item.cantidad)} {item.unidad}
-          </td>
-          <td className="px-4 py-3 text-right text-white/70 whitespace-nowrap">
-            {formatCLP(item.precio_unitario_clp)}
-          </td>
-          <td className="px-4 py-3 text-right text-paper font-medium whitespace-nowrap">
-            {formatCLP(item.subtotal_clp)}
-          </td>
+          <td className="px-4 py-3 text-right text-white/70 whitespace-nowrap">{formatNumber(item.cantidad)} {item.unidad}</td>
+          <td className="px-4 py-3 text-right text-white/70 whitespace-nowrap">{formatCLP(item.precio_unitario_clp)}</td>
+          <td className="px-4 py-3 text-right text-paper font-medium whitespace-nowrap">{formatCLP(item.subtotal_clp)}</td>
         </tr>
       ))}
     </>
@@ -205,18 +312,8 @@ function RenderGrupo({ categoria, rows }) {
 function SummaryRow({ label, value, highlight = false }) {
   return (
     <div className="flex items-center justify-between py-1">
-      <span className={highlight ? "text-paper font-semibold" : "text-white/60 text-sm"}>
-        {label}
-      </span>
-      <span
-        className={
-          highlight
-            ? "text-gold text-lg font-bold"
-            : "text-white/80 text-sm"
-        }
-      >
-        {value}
-      </span>
+      <span className={highlight ? "text-paper font-semibold" : "text-white/60 text-sm"}>{label}</span>
+      <span className={highlight ? "text-gold text-lg font-bold" : "text-white/80 text-sm"}>{value}</span>
     </div>
   );
 }
