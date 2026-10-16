@@ -93,7 +93,14 @@ app.post("/api/estimar", estimateLimiter, checkPasscode, async (req, res) => {
     });
   } catch (err) {
     console.error("Error generando estimación:", err.message);
-    res.status(500).json({ error: err.message || "Error interno al generar la estimación." });
+    // No exponer detalles internos (ni keys ni mensajes de la API) al frontend
+    const userMessage =
+      err.message?.includes("No se pudo interpretar")
+        ? "La IA devolvió una respuesta inesperada. Intenta con otra descripción."
+        : err.message?.includes("Error de la API de Anthropic")
+        ? "Error al contactar la IA. Intenta nuevamente en unos segundos."
+        : "Error interno al generar la estimación. Intenta nuevamente.";
+    res.status(500).json({ error: userMessage });
   }
 });
 
