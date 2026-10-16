@@ -57,3 +57,19 @@ body {
   background-size: 400px 100%;
   animation: shimmer 1.6s infinite;
 }
+
+/* ── Estilos de impresión para exportar PDF ── */
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff !important; color: #111 !important; }
+  .bg-ink, .bg-charcoal, .bg-charcoal-light { background: #fff !important; }
+  .text-paper, .text-white\/80, .text-white\/70, .text-white\/60, .text-white\/50, .text-white\/40, .text-white\/30 {
+    color: #222 !important;
+  }
+  .text-gold { color: #8A6F16 !important; }
+  .border-white\/10, .border-white\/5, .border-gold\/20 { border-color: #ddd !important; }
+  .rounded-2xl { border-radius: 8px; border: 1px solid #ddd; }
+  header, footer, .fixed { display: none !important; }
+  main { padding: 0 !important; }
+  .export-container { padding: 16px !important; }
+}

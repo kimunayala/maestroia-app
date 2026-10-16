@@ -1,6 +1,27 @@
+import { useRef } from "react";
+import html2canvas from "html2canvas";
 import { formatCLP, formatNumber } from "../utils/format";
 
+async function exportarImagen(ref, tipo) {
+  if (!ref.current) return;
+  const canvas = await html2canvas(ref.current, {
+    backgroundColor: "#0f0f10",
+    scale: 2,
+    useCORS: true,
+  });
+  const url = canvas.toDataURL(tipo === "jpg" ? "image/jpeg" : "image/png", 0.95);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `maestroia-estimacion.${tipo}`;
+  a.click();
+}
+
+function exportarPDF() {
+  window.print();
+}
+
 export default function ResultsTable({ data }) {
+  const exportRef = useRef(null);
   if (!data) return null;
 
   const { proyecto, items, notas_generales, resumen } = data;
@@ -14,6 +35,29 @@ export default function ResultsTable({ data }) {
 
   return (
     <div className="mt-10 animate-fade-in-up">
+      {/* Botones exportar — se ocultan al imprimir */}
+      <div className="flex gap-2 mb-4 justify-end no-print">
+        <button
+          onClick={exportarPDF}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-all"
+        >
+          ⬇ PDF
+        </button>
+        <button
+          onClick={() => exportarImagen(exportRef, "png")}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-all"
+        >
+          ⬇ PNG
+        </button>
+        <button
+          onClick={() => exportarImagen(exportRef, "jpg")}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-all"
+        >
+          ⬇ JPG
+        </button>
+      </div>
+
+      <div ref={exportRef} className="export-container p-2">
       <div className="flex items-center justify-between mb-1">
         <h2
           className="text-xl text-paper"
@@ -72,6 +116,7 @@ export default function ResultsTable({ data }) {
         aproximados. No reemplaza una cotización formal ni un presupuesto detallado por
         Evoluzion Arquitectura y Diseño.
       </p>
+      </div>{/* fin export-container */}
     </div>
   );
 }
