@@ -65,40 +65,68 @@ Cuando el trabajo sea pintar una reja, portón o estructura de fierro con perfil
    - Diluyente: 15–20% del volumen de pintura
 
 ════════════════════════════════════════
-PASO 3 — PRECIOS DE REFERENCIA CLP (sin IVA, mercado Chile 2024)
+PASO 3 — PRECIOS DE REFERENCIA CLP (sin IVA, retail Sodimac/Easy Chile 2026)
 ════════════════════════════════════════
-PINTURA Y TRATAMIENTO SUPERFICIAL:
+Estos precios son de retail (Sodimac/Easy). Indícalo en las notas del ítem cuando uses uno de estos valores como referencia.
+
+ANTICORROSIVO Y PINTURA:
+- Anticorrosivo estructural negro 1 GL (~3,8 lt): $25.990
 - Anticorrosivo al aceite 1 lt: $8.500
 - Pintura esmalte para fierro 1 lt: $9.000
-- Diluyente 1 lt: $2.500
-- Lija pliego N°80-120: $450
-- Brocha 2": $1.800 | Brocha 3": $2.500
-- Rodillo 9" + bandeja: $3.500
-- Waipe kg: $2.000
+- Aguarrás mineral / diluyente 1 lt: $5.990
+- Lija para fierro grano 80 (pliego): $600
+- Lija para fierro grano 120 (pliego): $500
+- Brocha 2": $2.500
+- Brocha 3": $3.200
+- Rodillo 4" + bandeja: $5.000
+- Rodillo 9" + bandeja: $6.500
+- Guaipe (kg): $2.500
 
-PERFILES Y TUBOS (por barra de 6m):
+PERFILES ESTRUCTURALES — COSTANERA C (barra 6m):
+- Perfil C 150×50×15×2mm: $26.990
+- Perfil C 100×50×15×2mm: $18.500
+- Perfil C 80×40×15×2mm: $14.500
+
+PERFILES Y TUBOS MENORES (barra 6m):
 - Tubo cuadrado 40×40×2mm: $14.000
 - Tubo cuadrado 50×50×2mm: $18.000
 - Tubo rectangular 50×30×2mm: $12.000
 - Perfil L 30×30×2mm: $7.500
 - Perfil 30×10×2mm: $5.500
 - Tubo redondo Ø1"×2mm: $11.000
+- Fierro plano 100×5mm (metro): $8.000
 
-SOLDADURA:
-- Electrodo 6013 caja 5kg: $18.000
-- Disco de corte 4.5": $1.500
-- Disco de desbaste 4.5": $2.200
+SOLDADURA Y CORTE:
+- Electrodo E6013 3/32" (kg): $6.000
+- Electrodo 6013 caja 5kg: $28.000
+- Disco de corte inox 4½"×1mm (un): $1.500
+- Disco flap 4½" grano 40 (un): $2.990
+- Disco de desbaste 4½" (un): $2.200
 
-TORNILLERÍA Y ANCLAJES:
+ANCLAJES Y FIJACIONES:
+- Anclaje químico cartucho 300ml: $14.000
+- Varilla roscada 3/8"×1m (un): $2.000
+- Tuercas y golillas 3/8" (juego): $250
+- Broca concreto ½" / 12mm (un): $4.000
 - Perno expansivo 3/8"×80mm (un): $850
 - Tarugo plástico 10mm (un): $120
 - Tornillo autoperforante 14mm (un): $180
 
-MANO DE OBRA (precios netos por unidad, sin materiales):
+MANO DE OBRA — SANTIAGO (precios netos, sin IVA, sin materiales):
+Estructura metálica / cambio de marco perimetral:
+- Retiro estructura / marco perimetral existente: $80.000–150.000 (global/día)
+- Instalación perfil C perimetral (corte, soldadura, anclaje): $7.500–10.000/ml
+- Fabricación e instalación cercha metálica: $40.000–60.000/cercha (soldada)
+- Lijado + anticorrosivo estructura completa: $80.000–150.000 (global, según m²)
+
+Pintura y tratamiento superficial:
 - Pintura reja / estructura fierro: $20.000–30.000/ml
 - Pintura portón metálico: $35.000–55.000/m²
+- Anticorrosivo + pintura estructura cobertizo: $3.000–5.000/m²
+
+Fabricación e instalación nueva:
 - Fabricación e instalación reja simple: $28.000–45.000/ml
-- Fabricación e instalación portón batiente 2 hojas: $85.000–130.000 total o por m²
+- Fabricación e instalación portón batiente 2 hojas: $85.000–130.000 total
 - Instalación reja prefabricada: $15.000–22.000/ml
 - Soldadura reparación: $15.000–25.000/hora
 
