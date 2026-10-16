@@ -58,18 +58,111 @@ body {
   animation: shimmer 1.6s infinite;
 }
 
+/* ── Elemento solo visible al imprimir ── */
+.print-only { display: none; }
+
 /* ── Estilos de impresión para exportar PDF ── */
 @media print {
-  .no-print { display: none !important; }
-  body { background: #fff !important; color: #111 !important; }
-  .bg-ink, .bg-charcoal, .bg-charcoal-light { background: #fff !important; }
-  .text-paper, .text-white\/80, .text-white\/70, .text-white\/60, .text-white\/50, .text-white\/40, .text-white\/30 {
-    color: #222 !important;
+  @page { margin: 18mm 16mm; }
+
+  .no-print  { display: none !important; }
+  .print-only { display: block !important; }
+
+  body {
+    background: #fff !important;
+    color: #111 !important;
+    font-family: "Century Gothic", "Poppins", sans-serif;
+    font-size: 11pt;
   }
-  .text-gold { color: #8A6F16 !important; }
-  .border-white\/10, .border-white\/5, .border-gold\/20 { border-color: #ddd !important; }
-  .rounded-2xl { border-radius: 8px; border: 1px solid #ddd; }
+
   header, footer, .fixed { display: none !important; }
-  main { padding: 0 !important; }
-  .export-container { padding: 16px !important; }
+  main { padding: 0 !important; max-width: 100% !important; }
+
+  /* ── Encabezado formal ── */
+  .print-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2.5pt solid #C4A020;
+    padding-bottom: 10pt;
+    margin-bottom: 14pt;
+  }
+  .print-header-brand { line-height: 1.3; }
+  .print-header-brand .brand-name {
+    font-size: 18pt;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #111;
+    text-transform: uppercase;
+  }
+  .print-header-brand .brand-tagline {
+    font-size: 8pt;
+    color: #C4A020;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .print-header-meta {
+    text-align: right;
+    font-size: 8.5pt;
+    color: #555;
+    line-height: 1.6;
+  }
+  .print-header-meta .doc-title {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #111;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* ── Contenedor exportación ── */
+  .export-container {
+    padding: 0 !important;
+  }
+
+  /* ── Título proyecto ── */
+  .export-container h2 {
+    font-size: 14pt !important;
+    font-weight: 700 !important;
+    color: #111 !important;
+    margin-bottom: 2pt;
+  }
+
+  /* ── Tabla ── */
+  .bg-ink, .bg-charcoal, .bg-charcoal-light, [class*="bg-charcoal"] {
+    background: #fff !important;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+  thead tr { background: #f0f0f0 !important; }
+  thead th {
+    color: #333 !important;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 8pt;
+    padding: 6pt 8pt !important;
+    border-bottom: 1.5pt solid #C4A020;
+  }
+  tbody tr { border-bottom: 0.5pt solid #e0e0e0 !important; }
+  tbody td { padding: 5pt 8pt !important; color: #222 !important; }
+  .text-gold { color: #8A6F16 !important; font-weight: 700; }
+  .text-paper, [class*="text-white"] { color: #222 !important; }
+
+  /* ── Fila categoría ── */
+  [class*="bg-ink\/40"] { background: #f7f3e8 !important; }
+
+  /* ── Resumen ── */
+  .rounded-2xl { border-radius: 4pt; border: 0.5pt solid #ddd !important; }
+  [class*="border-gold\/20"] { border-color: #C4A020 !important; }
+
+  /* ── Footer doc ── */
+  .print-footer {
+    display: block !important;
+    margin-top: 14pt;
+    border-top: 0.5pt solid #ccc;
+    padding-top: 8pt;
+    font-size: 7.5pt;
+    color: #888;
+    text-align: center;
+  }
 }

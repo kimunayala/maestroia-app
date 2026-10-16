@@ -87,6 +87,20 @@ export default function ResultsTable({ data }) {
       </div>
 
       <div ref={exportRef} className="export-container p-2">
+
+      {/* Encabezado formal — solo visible al imprimir */}
+      <div className="print-header print-only">
+        <div className="print-header-brand">
+          <div className="brand-name">Evoluzion</div>
+          <div className="brand-tagline">Arquitectura &amp; Diseño · Santiago</div>
+        </div>
+        <div className="print-header-meta">
+          <div className="doc-title">Cotización Preliminar</div>
+          <div>{new Date().toLocaleDateString("es-CL", { day: "2-digit", month: "long", year: "numeric" })}</div>
+          <div>Generado por MaestroIA</div>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between mb-1">
         <h2
           className="text-xl text-paper"
@@ -140,11 +154,18 @@ export default function ResultsTable({ data }) {
         </div>
       )}
 
-      <p className="mt-4 text-[11px] text-white/30 leading-relaxed">
+      <p className="mt-4 text-[11px] text-white/30 leading-relaxed no-print">
         Esta estimación es referencial, generada con IA a partir de precios de mercado
         aproximados. No reemplaza una cotización formal ni un presupuesto detallado por
         Evoluzion Arquitectura y Diseño.
       </p>
+
+      {/* Footer formal — solo visible al imprimir */}
+      <div className="print-footer print-only">
+        Estimación preliminar generada con MaestroIA · Los valores son referenciales y no constituyen una cotización formal comprometida ·
+        Válida por 15 días · Evoluzion Arquitectura &amp; Diseño · Santiago, Chile
+      </div>
+
       </div>{/* fin export-container */}
     </div>
   );
