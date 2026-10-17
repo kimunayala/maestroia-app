@@ -5,6 +5,7 @@ const cors = require("cors");
 const path = require("path");
 const rateLimit = require("express-rate-limit");
 const { generarEstimacion } = require("./claudeClient");
+const { buscarPrecios } = require("./scrapers");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -125,6 +126,21 @@ app.post("/api/estimar", estimateLimiter, checkPasscode, async (req, res) => {
         ? "Error al contactar la IA. Intenta nuevamente en unos segundos."
         : "Error interno al generar la estimación. Intenta nuevamente.";
     res.status(500).json({ error: userMessage });
+  }
+});
+
+// --- Búsqueda de precios en Sodimac / Easy ---
+app.get("/api/precios", async (req, res) => {
+  const { q } = req.query;
+  if (!q || typeof q !== "string" || q.trim().length < 2) {
+    return res.status(400).json({ error: "Parámetro q requerido (mínimo 2 caracteres)." });
+  }
+  try {
+    const resultado = await buscarPrecios(q.trim().slice(0, 80));
+    res.json(resultado);
+  } catch (err) {
+    console.error("[precios] Error:", err.message);
+    res.status(500).json({ error: "No se pudo obtener precios en este momento." });
   }
 });
 

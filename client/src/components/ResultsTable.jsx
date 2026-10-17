@@ -240,11 +240,66 @@ async function exportarPDF(ref, nombreProyecto) {
   pdf.save(nombre);
 }
 
+/* ── Comparación de precios Sodimac / Easy ── */
+function TagPrecio({ resultado, cargando }) {
+  if (cargando) return <span className="text-[10px] text-white/30 animate-pulse">Buscando precios…</span>;
+  if (!resultado) return null;
+  const items = [...(resultado.easy || []), ...(resultado.sodimac || [])];
+  if (!items.length) return <span className="text-[10px] text-white/25">Sin precios en línea</span>;
+  const cheapest = items.reduce((a, b) => (a.precio < b.precio ? a : b));
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-1">
+      {items.slice(0, 3).map((p, i) => (
+        <a
+          key={i}
+          href={p.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-medium transition-colors no-underline
+            ${p.tienda === "Easy"
+              ? "border-orange-500/30 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20"
+              : "border-red-400/30 bg-red-400/10 text-red-300 hover:bg-red-400/20"
+            }
+            ${p.precio === cheapest.precio ? "ring-1 ring-gold/40" : ""}
+          `}
+        >
+          {p.tienda} · {formatCLP(p.precio)}
+          {p.unidad && <span className="opacity-60"> {p.unidad}</span>}
+        </a>
+      ))}
+    </div>
+  );
+}
+
 /* ── Componente principal ── */
 export default function ResultsTable({ data }) {
   const exportRef = useRef(null);
   const [datos, guardarDatos] = useDatosDoc();
+  const [preciosData, setPreciosData] = useState({});
+  const [buscandoPrecios, setBuscandoPrecios] = useState(false);
   if (!data) return null;
+
+  async function buscarTodosPrecios() {
+    if (buscandoPrecios) return;
+    setBuscandoPrecios(true);
+    const materiales = (data.items_materiales || []).map(i => i.material).filter(Boolean);
+    // Marcar todos como cargando
+    const cargando = Object.fromEntries(materiales.map(m => [m, { cargando: true }]));
+    setPreciosData(cargando);
+    // Fetch en paralelo (máx 6 para no saturar)
+    await Promise.all(
+      materiales.slice(0, 8).map(async (mat) => {
+        try {
+          const res = await fetch(`/api/precios?q=${encodeURIComponent(mat)}`);
+          const json = await res.json();
+          setPreciosData(prev => ({ ...prev, [mat]: { ...json, cargando: false } }));
+        } catch {
+          setPreciosData(prev => ({ ...prev, [mat]: { cargando: false } }));
+        }
+      })
+    );
+    setBuscandoPrecios(false);
+  }
 
   const mailtoLink = generarMailto(data, datos);
   const { proyecto, items_materiales = [], items_mo = [], notas_generales, resumen } = data;
@@ -271,6 +326,13 @@ export default function ResultsTable({ data }) {
           <a href={mailtoLink} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gold/30 bg-gold/10 hover:bg-gold/20 text-gold text-xs font-medium transition-all">
             ✉ Enviar por correo
           </a>
+          <button
+            onClick={buscarTodosPrecios}
+            disabled={buscandoPrecios}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-400/30 bg-blue-400/10 hover:bg-blue-400/20 text-blue-300 text-xs font-medium transition-all disabled:opacity-50"
+          >
+            🔍 {buscandoPrecios ? "Buscando…" : "Comparar precios"}
+          </button>
           <button onClick={() => exportarPDF(exportRef, proyecto)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-all">
             ⬇ PDF
           </button>
@@ -340,7 +402,7 @@ export default function ResultsTable({ data }) {
                 </thead>
                 <tbody>
                   {Object.entries(gruposMateriales).map(([categoria, rows]) => (
-                    <RenderGrupoMateriales key={categoria} categoria={categoria} rows={rows} />
+                    <RenderGrupoMateriales key={categoria} categoria={categoria} rows={rows} preciosData={preciosData} />
                   ))}
                 </tbody>
               </table>
@@ -432,23 +494,29 @@ export default function ResultsTable({ data }) {
   );
 }
 
-function RenderGrupoMateriales({ categoria, rows }) {
+function RenderGrupoMateriales({ categoria, rows, preciosData = {} }) {
   return (
     <>
       <tr className="bg-ink/40">
         <td colSpan={4} className="px-4 py-2 text-gold text-xs font-semibold tracking-wide uppercase">{categoria}</td>
       </tr>
-      {rows.map((item, i) => (
-        <tr key={i} className="border-t border-white/5 hover:bg-white/[0.02] transition-colors">
-          <td className="px-4 py-3 text-white/80">
-            {item.material}
-            {item.notas && <span className="block text-[11px] text-white/35 mt-0.5">{item.notas}</span>}
-          </td>
-          <td className="px-4 py-3 text-right text-white/70 whitespace-nowrap">{formatNumber(item.cantidad)} {item.unidad}</td>
-          <td className="px-4 py-3 text-right text-white/70 whitespace-nowrap">{formatCLP(item.precio_unitario_clp)}</td>
-          <td className="px-4 py-3 text-right text-paper font-medium whitespace-nowrap">{formatCLP(item.subtotal_clp)}</td>
-        </tr>
-      ))}
+      {rows.map((item, i) => {
+        const pd = preciosData[item.material];
+        return (
+          <tr key={i} className="border-t border-white/5 hover:bg-white/[0.02] transition-colors">
+            <td className="px-4 py-3 text-white/80">
+              {item.material}
+              {item.notas && <span className="block text-[11px] text-white/35 mt-0.5">{item.notas}</span>}
+              {pd !== undefined && (
+                <TagPrecio resultado={pd} cargando={pd?.cargando} />
+              )}
+            </td>
+            <td className="px-4 py-3 text-right text-white/70 whitespace-nowrap">{formatNumber(item.cantidad)} {item.unidad}</td>
+            <td className="px-4 py-3 text-right text-white/70 whitespace-nowrap">{formatCLP(item.precio_unitario_clp)}</td>
+            <td className="px-4 py-3 text-right text-paper font-medium whitespace-nowrap">{formatCLP(item.subtotal_clp)}</td>
+          </tr>
+        );
+      })}
     </>
   );
 }
