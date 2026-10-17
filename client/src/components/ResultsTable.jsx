@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import { formatCLP, formatNumber } from "../utils/format";
 
 /* ── Persistencia de datos empresa/cliente en localStorage ── */
@@ -172,15 +173,71 @@ function generarMailto(data, datos) {
   return `mailto:${dest}?subject=${asunto}&body=${body}`;
 }
 
+/* ── Captura html2canvas con fondo oscuro garantizado ── */
+async function capturarCanvas(el) {
+  const prevBg = el.style.backgroundColor;
+  el.style.backgroundColor = "#0f0f10";
+  const canvas = await html2canvas(el, {
+    backgroundColor: "#0f0f10",
+    scale: 2,
+    useCORS: true,
+    logging: false,
+  });
+  el.style.backgroundColor = prevBg;
+  return canvas;
+}
+
 /* ── Exportar JPG ── */
 async function exportarImagen(ref, tipo) {
   if (!ref.current) return;
-  const canvas = await html2canvas(ref.current, { backgroundColor: "#0f0f10", scale: 2, useCORS: true });
+  const canvas = await capturarCanvas(ref.current);
   const url = canvas.toDataURL(tipo === "jpg" ? "image/jpeg" : "image/png", 0.95);
   const a = document.createElement("a");
   a.href = url;
   a.download = `maestroia-estimacion.${tipo}`;
   a.click();
+}
+
+/* ── Exportar PDF real (descarga directa o Share API en móvil) ── */
+async function exportarPDF(ref, nombreProyecto) {
+  if (!ref.current) return;
+  const canvas = await capturarCanvas(ref.current);
+  const imgData = canvas.toDataURL("image/jpeg", 0.92);
+
+  const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
+  const pageW = pdf.internal.pageSize.getWidth();   // 210 mm
+  const pageH = pdf.internal.pageSize.getHeight();  // 297 mm
+  const imgW  = pageW;
+  const imgH  = (canvas.height * pageW) / canvas.width;
+
+  // Divide en páginas si el contenido es más largo que una hoja
+  let posY = 0;
+  while (posY < imgH) {
+    if (posY > 0) pdf.addPage();
+    pdf.addImage(imgData, "JPEG", 0, -posY, imgW, imgH);
+    posY += pageH;
+  }
+
+  const nombre = `maestroia-${(nombreProyecto || "cotizacion").toLowerCase().replace(/\s+/g, "-")}.pdf`;
+
+  // En móvil: intentar Web Share API para adjuntar el PDF al correo o compartir
+  if (navigator.share && navigator.canShare) {
+    const blob = pdf.output("blob");
+    const file = new File([blob], nombre, { type: "application/pdf" });
+    if (navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: "Cotización MaestroIA" });
+        return;
+      } catch (e) {
+        // Si el usuario canceló el share, igual guardamos
+        if (e.name !== "AbortError") pdf.save(nombre);
+        return;
+      }
+    }
+  }
+
+  // Fallback: descarga directa
+  pdf.save(nombre);
 }
 
 /* ── Componente principal ── */
@@ -214,7 +271,7 @@ export default function ResultsTable({ data }) {
           <a href={mailtoLink} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gold/30 bg-gold/10 hover:bg-gold/20 text-gold text-xs font-medium transition-all">
             ✉ Enviar por correo
           </a>
-          <button onClick={() => window.print()} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-all">
+          <button onClick={() => exportarPDF(exportRef, proyecto)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-all">
             ⬇ PDF
           </button>
           <button onClick={() => exportarImagen(exportRef, "jpg")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-all">
