@@ -240,34 +240,18 @@ async function exportarPDF(ref, nombreProyecto) {
   pdf.save(nombre);
 }
 
-/* ── Comparación de precios Sodimac / Easy ── */
+/* ── Referencia de precio de mercado (interna, sin branding) ── */
 function TagPrecio({ resultado, cargando }) {
-  if (cargando) return <span className="text-[10px] text-white/30 animate-pulse">Buscando precios…</span>;
+  if (cargando) return <span className="text-[10px] text-white/25 animate-pulse">buscando ref…</span>;
   if (!resultado) return null;
   const items = [...(resultado.easy || []), ...(resultado.sodimac || [])];
-  if (!items.length) return <span className="text-[10px] text-white/25">Sin precios en línea</span>;
+  if (!items.length) return null;
   const cheapest = items.reduce((a, b) => (a.precio < b.precio ? a : b));
   return (
-    <div className="flex flex-wrap gap-1.5 mt-1">
-      {items.slice(0, 3).map((p, i) => (
-        <a
-          key={i}
-          href={p.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-medium transition-colors no-underline
-            ${p.tienda === "Easy"
-              ? "border-orange-500/30 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20"
-              : "border-red-400/30 bg-red-400/10 text-red-300 hover:bg-red-400/20"
-            }
-            ${p.precio === cheapest.precio ? "ring-1 ring-gold/40" : ""}
-          `}
-        >
-          {p.tienda} · {formatCLP(p.precio)}
-          {p.unidad && <span className="opacity-60"> {p.unidad}</span>}
-        </a>
-      ))}
-    </div>
+    <span className="text-[10px] text-white/35 mt-0.5 block">
+      ref. mercado: {formatCLP(cheapest.precio)}
+      {cheapest.unidad && <span className="opacity-70"> {cheapest.unidad}</span>}
+    </span>
   );
 }
 
@@ -276,18 +260,15 @@ export default function ResultsTable({ data }) {
   const exportRef = useRef(null);
   const [datos, guardarDatos] = useDatosDoc();
   const [preciosData, setPreciosData] = useState({});
-  const [buscandoPrecios, setBuscandoPrecios] = useState(false);
   if (!data) return null;
 
-  async function buscarTodosPrecios() {
-    if (buscandoPrecios) return;
-    setBuscandoPrecios(true);
+  useEffect(() => {
     const materiales = (data.items_materiales || []).map(i => i.material).filter(Boolean);
+    if (!materiales.length) return;
     // Marcar todos como cargando
-    const cargando = Object.fromEntries(materiales.map(m => [m, { cargando: true }]));
-    setPreciosData(cargando);
-    // Fetch en paralelo (máx 6 para no saturar)
-    await Promise.all(
+    setPreciosData(Object.fromEntries(materiales.map(m => [m, { cargando: true }])));
+    // Fetch en paralelo (máx 8)
+    Promise.all(
       materiales.slice(0, 8).map(async (mat) => {
         try {
           const res = await fetch(`/api/precios?q=${encodeURIComponent(mat)}`);
@@ -298,8 +279,8 @@ export default function ResultsTable({ data }) {
         }
       })
     );
-    setBuscandoPrecios(false);
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   const mailtoLink = generarMailto(data, datos);
   const { proyecto, items_materiales = [], items_mo = [], notas_generales, resumen } = data;
@@ -326,13 +307,6 @@ export default function ResultsTable({ data }) {
           <a href={mailtoLink} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gold/30 bg-gold/10 hover:bg-gold/20 text-gold text-xs font-medium transition-all">
             ✉ Enviar por correo
           </a>
-          <button
-            onClick={buscarTodosPrecios}
-            disabled={buscandoPrecios}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-400/30 bg-blue-400/10 hover:bg-blue-400/20 text-blue-300 text-xs font-medium transition-all disabled:opacity-50"
-          >
-            🔍 {buscandoPrecios ? "Buscando…" : "Comparar precios"}
-          </button>
           <button onClick={() => exportarPDF(exportRef, proyecto)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium transition-all">
             ⬇ PDF
           </button>
