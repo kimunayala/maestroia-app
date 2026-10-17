@@ -19,3 +19,6 @@ npm-debug.log*
 # Editor
 .vscode/
 .idea/
+
+# Capacitor Android (generado localmente, se reconstruye con `npx cap add android`)
+client/android/
