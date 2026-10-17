@@ -12,29 +12,17 @@ function App() {
   const [error, setError] = useState(null);
 
   const [checkingAccess, setCheckingAccess] = useState(true);
-  const [passcodeRequired, setPasscodeRequired] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
-  const [passcode, setPasscode] = useState(
-    sessionStorage.getItem("maestroia_passcode") || ""
-  );
 
   useEffect(() => {
-    fetch("/api/config")
-      .then((res) => res.json())
-      .then((data) => {
-        setPasscodeRequired(Boolean(data.passcodeRequired));
-        // Si no requiere passcode, o ya hay uno guardado, dejamos pasar directo
-        // (la validación real ocurre en el backend en cada /api/estimar).
-        if (!data.passcodeRequired || sessionStorage.getItem("maestroia_passcode")) {
-          setUnlocked(true);
-        }
-      })
-      .catch(() => setUnlocked(true)) // si falla la config, no bloqueamos el acceso
-      .finally(() => setCheckingAccess(false));
+    // Mostrar pantalla de bienvenida al abrir la app por primera vez en la sesión
+    const hasSession = Boolean(sessionStorage.getItem("maestroia_unlocked"));
+    setUnlocked(hasSession);
+    setCheckingAccess(false);
   }, []);
 
-  function handleUnlock(code) {
-    setPasscode(code);
+  function handleUnlock() {
+    sessionStorage.setItem("maestroia_unlocked", "true");
     setUnlocked(true);
   }
 
@@ -48,7 +36,6 @@ function App() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(passcode ? { "x-app-passcode": passcode } : {}),
         },
         body: JSON.stringify({ descripcion, imagenes, tipoCotizacion, unidadPrincipal }),
       });
@@ -71,7 +58,7 @@ function App() {
     return <div className="min-h-screen bg-ink" />;
   }
 
-  if (passcodeRequired && !unlocked) {
+  if (!unlocked) {
     return <PasscodeGate onUnlock={handleUnlock} />;
   }
 
